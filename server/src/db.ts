@@ -2,10 +2,10 @@ import { Pool } from "pg";
 // Соединение с базой
 const pool = new Pool({
     user: "postgres",
-    password: "Ваш пароль",
+    password: "Пароль",
     host: "localhost",
     port: 5432,
-    database: "База данных"
+    database: "Название базы"
 })
 
 export default pool

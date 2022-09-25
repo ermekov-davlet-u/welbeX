@@ -1,6 +1,7 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import Select, { IOptionType } from "./components/Select";
 import Table from './components/Table';
+import Navigation from './components/Navigation';
 
 export interface ITableType {
   id: number;
@@ -10,11 +11,19 @@ export interface ITableType {
   distance: number;
 }
 
+type result = {
+  mess: string;
+  err: string | null;
+  data: ITableType[],
+  pageCount: number
+}
+
 type strnum = number | string
 
 function App() {
   //Основной рабочий стейт
   const [table, setTable] = useState<ITableType[]>([])
+  const [maxPage, setMaxPage] = useState<number>(0)
   // Поля фильтрации и методы их изменения
   const [ criterion, setCriterion ] = useState<strnum>(0)
   const [ column, setColumn ] = useState<strnum>(0)
@@ -37,11 +46,11 @@ function App() {
       title: "Содержить"
     },
     {
-      id: "<",
+      id: ">",
       title: "Больше"
     },
     {
-      id: ">",
+      id: "<",
       title: "Меньше"
     }
   ]
@@ -61,42 +70,31 @@ function App() {
     }
   ]
   //функция получения данных с сервера
-  const getTable =async (criterion?: strnum, column?: strnum, searchText?: string) => {
+  const getTable =async (pageNum: number) => {
     if(
       criterion &&
       column &&
       searchText
     ){
-      const tables: {
-        mess: string;
-        err: string | null;
-        data: ITableType[]
-      } = await fetch(`http://localhost:3000/${criterion}/${searchText}/${column}`)
+      const tables: result = await fetch(`http://localhost:3000/${criterion}/${searchText}/${column}?page=${--pageNum}`)
         .then(res => res.json())
         .catch(err => {
           console.log(err);
           return []
         })
         setTable(tables.data);
+        setMaxPage(tables.pageCount)
       return
     }
-    const tables: {
-      mess: string;
-      err: string | null;
-      data: ITableType[]
-    } = await fetch("http://localhost:3000")
+    const tables: result = await fetch(`http://localhost:3000/?page=${--pageNum}`)
       .then(res => res.json())
       .catch(err => {
         console.log(err);
         return []
       })
     setTable(tables.data);
+    setMaxPage(tables.pageCount)
   }
- // По умолчанию все данные приходят
-  useEffect(() => {
-    getTable()
-  }, [])
-
   return (
     <div className="App">
       <header>
@@ -112,14 +110,15 @@ function App() {
             searchText
           ) && 
           <input type="button" value="Фильтровать" className="form__input inp_btn" onClick={() => {
-            getTable(criterion,column,searchText)
+            getTable(1)
           }} />
         }
         <input type="button" value="Все" className="form__input inp_btn" onClick={() => {
-          getTable()
+          getTable(1)
         }} />
       </header>
       <Table table={table}/>
+      <Navigation max={maxPage} getTable={getTable} />
     </div>
   );
 }
